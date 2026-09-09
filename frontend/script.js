@@ -2,7 +2,7 @@
 // API Configuration
 // Change this URL when deploying the backend to Render/Railway
 // =============================================================
-const API_URL = "http://localhost:8000";
+const API_URL = "https://customer-churn-prediction-production-4a18.up.railway.app";
 
 // =============================================================
 // DOM Elements
