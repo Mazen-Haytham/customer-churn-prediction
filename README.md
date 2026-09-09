@@ -6,8 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
-[![Pandas](https://img.shields.io/badge/pandas-2.x-150458?logo=pandas&logoColor=white)](https://pandas.pydata.org/)
-[![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter&logoColor=white)](https://jupyter.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -18,161 +17,227 @@
 
 Customer churn — when a customer cancels their subscription — is one of the costliest problems for a telecom company, since acquiring a new customer is far more expensive than retaining an existing one.
 
-This project builds a full, end-to-end churn-prediction pipeline on the **IBM Telco Customer Churn** dataset (7,043 customers, 21 attributes covering demographics, account information, and subscribed services). It walks through cleaning, exploratory analysis, feature engineering, class-imbalance correction, and the training/tuning/comparison of **six classification models**, finishing with a feature-importance breakdown and concrete business recommendations.
-
-**Overall churn rate in the dataset: ~26.6%**
-
-<p align="center">
-  <img src="images/churn_distribution.png" width="600" alt="Churn distribution">
-</p>
+This project builds an end-to-end churn-prediction pipeline on the **IBM Telco Customer Churn** dataset (7,043 customers, 21 attributes) and deploys the best model as a **FastAPI REST API** with a **plain HTML/CSS/JS frontend**.
 
 ---
 
 ## 🗂️ Project Structure
 
 ```
-.
-├── Telco_Customer_Churn_Prediction.ipynb   # Main analysis & modeling notebook
+customer-churn-prediction/
+│
+├── app/
+│   └── main.py                          # FastAPI application
+│
+├── model/                               # Generated model artifacts (after running export script)
+│   ├── adaboost_model.joblib
+│   ├── onehot_encoder.joblib
+│   └── feature_columns.json
+│
+├── frontend/                            # Static frontend (deploy to Vercel)
+│   ├── index.html
+│   ├── style.css
+│   ├── script.js
+│   └── vercel.json
+│
 ├── data/
 │   └── WA_Fn-UseC_-Telco-Customer-Churn.csv
-├── images/                                 # Exported charts (used in this README)
-│   ├── churn_distribution.png
-│   ├── correlation_heatmap.png
-│   ├── numeric_vs_churn.png
-│   ├── churn_by_tenure.png
-│   ├── model_comparison.png
-│   ├── roc_curves.png
-│   ├── confusion_matrices.png
-│   └── feature_importance.png
-├── requirements.txt
+│
+├── images/                              # EDA charts from notebook
+│
+├── Telco_Customer_Churn_Prediction.ipynb # Original analysis notebook
+├── train_and_export.py                  # One-time: retrain & save model
+├── Procfile                             # Render / Railway start command
+├── requirements.txt                     # Python dependencies
+├── LICENSE
 └── README.md
 ```
 
 ---
 
-## 🔬 Methodology
-
-| Stage | What happens |
-|---|---|
-| **1. Data Cleaning** | Drop `customerID`, fix `TotalCharges` (blank → numeric → imputed), encode binary/ordinal/nominal categorical fields |
-| **2. EDA** | Churn distribution, correlation heatmap, tenure/charges vs. churn, churn rate over tenure |
-| **3. Feature Engineering** | Ordinal encoding for service/contract fields, one-hot encoding for `PaymentMethod` & `InternetService` |
-| **4. Train/Test Split** | 80/20 stratified split |
-| **5. Class Balancing** | `SMOTE` applied to the **training set only** (test set kept untouched for honest evaluation) |
-| **6. Modeling** | 6 classifiers tuned with `RandomizedSearchCV` (5-fold-equivalent CV, optimizing F1) |
-| **7. Evaluation** | Accuracy, Precision, Recall, F1, ROC-AUC, confusion matrices |
-| **8. Interpretation** | Random Forest feature importances → business recommendations |
-
-**Models compared:** Logistic Regression · Naive Bayes · K-Nearest Neighbors · Decision Tree · Random Forest · AdaBoost
-
----
-
-## 📊 Exploratory Highlights
-
-<table>
-<tr>
-<td width="50%"><img src="images/churn_by_tenure.png" alt="Churn rate by tenure"></td>
-<td width="50%"><img src="images/numeric_vs_churn.png" alt="Numeric features vs churn"></td>
-</tr>
-</table>
-
-- Churn is heavily concentrated among **low-tenure customers** — risk drops sharply the longer someone stays.
-- Churners tend to pay **higher monthly charges**, and (unsurprisingly, since they leave early) have **lower total lifetime charges**.
-- `Contract` type is one of the strongest single predictors of churn — see the correlation heatmap below.
-
-<p align="center">
-  <img src="images/correlation_heatmap.png" width="700" alt="Correlation heatmap">
-</p>
-
----
-
-## 🤖 Model Results
-
-All models trained on SMOTE-balanced data, evaluated on an untouched, stratified 20% test set. Sorted by F1-score on the churn class (the metric that matters most for an imbalanced, cost-asymmetric problem like this one).
-
-| Model | Test Accuracy | Precision (Churn) | Recall (Churn) | F1 (Churn) | ROC-AUC |
-|---|---|---|---|---|---|
-| **AdaBoost** | 0.749 | 0.519 | 0.741 | **0.610** | 0.830 |
-| Logistic Regression | 0.754 | 0.526 | 0.722 | 0.609 | 0.820 |
-| Random Forest | 0.769 | 0.556 | 0.636 | 0.594 | **0.831** |
-| Decision Tree | 0.754 | 0.529 | 0.658 | 0.586 | 0.812 |
-| Naive Bayes | 0.668 | 0.434 | **0.832** | 0.571 | 0.806 |
-| KNN | 0.698 | 0.453 | 0.655 | 0.536 | 0.729 |
-
-> 💡 **Naive Bayes catches the most churners (83% recall)** but at the cost of many false alarms. **Random Forest has the best overall ranking ability (highest ROC-AUC)**. **AdaBoost gives the best balance** between catching churners and avoiding false positives — the top pick if a single model must be chosen. The right choice ultimately depends on the retention team's tolerance for false positives vs. missed churners.
-
-<p align="center">
-  <img src="images/model_comparison.png" width="720" alt="Model comparison bar chart">
-</p>
-
-<table>
-<tr>
-<td width="50%"><img src="images/roc_curves.png" alt="ROC curves"></td>
-<td width="50%"><img src="images/confusion_matrices.png" alt="Confusion matrices"></td>
-</tr>
-</table>
-
-### Feature Importance (Random Forest)
-
-<p align="center">
-  <img src="images/feature_importance.png" width="650" alt="Feature importance">
-</p>
-
----
-
-## 💡 Key Business Recommendations
-
-1. **Target new customers early.** Churn risk is highest in the first few months — prioritize retention outreach for month-to-month customers in their first 90 days.
-2. **Push longer-term contracts.** Offer incentives (discounts, perks) for customers to move from month-to-month to 1-/2-year contracts.
-3. **Bundle stickiness features.** Online Security and Tech Support correlate with lower churn — consider including them by default in onboarding packages.
-4. **Build a proactive watchlist.** Use the model's predicted churn probability to flag at-risk customers for the retention team before they cancel.
-
----
-
-## 🚀 Getting Started
+## 🚀 Getting Started (Local Development)
 
 ### 1. Clone the repository
+
 ```bash
-git clone https://github.com/<your-username>/telco-customer-churn.git
-cd telco-customer-churn
+git clone https://github.com/<your-username>/customer-churn-prediction.git
+cd customer-churn-prediction
 ```
 
 ### 2. Set up the environment
+
 ```bash
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Run the notebook
+### 3. Train & export the model (one-time)
+
 ```bash
-jupyter notebook Telco_Customer_Churn_Prediction.ipynb
+python train_and_export.py
 ```
 
-The dataset is already included under `data/`, so the notebook runs end-to-end with no additional downloads.
+This will create the `model/` directory with the serialized model and encoder.
+
+### 4. Run the FastAPI API locally
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The API will be available at **http://localhost:8000**.
+
+- Swagger UI docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/
+
+### 5. Test the `/predict` endpoint
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "SeniorCitizen": 0,
+    "Partner": "Yes",
+    "Dependents": "No",
+    "tenure": 1,
+    "MultipleLines": "No phone service",
+    "InternetService": "DSL",
+    "OnlineSecurity": "No",
+    "OnlineBackup": "Yes",
+    "DeviceProtection": "No",
+    "TechSupport": "No",
+    "StreamingTV": "No",
+    "StreamingMovies": "No",
+    "Contract": "Month-to-month",
+    "PaperlessBilling": "Yes",
+    "PaymentMethod": "Electronic check",
+    "MonthlyCharges": 29.85,
+    "TotalCharges": 29.85
+  }'
+```
+
+**Example response:**
+
+```json
+{
+  "prediction": "Yes",
+  "churn_probability": 0.5765
+}
+```
+
+### 6. Run the frontend locally
+
+Option A — Python (no extra installs):
+
+```bash
+cd frontend
+python -m http.server 5500
+```
+
+Option B — VS Code Live Server extension on port 5500.
+
+Then open **http://localhost:5500** in your browser.
+
+> The frontend is pre-configured to call `http://localhost:8000`. Both the API and frontend must be running at the same time.
+
+---
+
+## 🌐 Deployment
+
+### Deploy the API to Render
+
+1. Push the repo to GitHub.
+2. Go to [render.com](https://render.com) → **New Web Service**.
+3. Connect your GitHub repository.
+4. Configure:
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Environment Variables:**
+     - `ALLOWED_ORIGINS` = your Vercel frontend URL (e.g. `https://your-app.vercel.app`)
+5. Deploy. Copy the Render URL (e.g. `https://your-api.onrender.com`).
+
+### Deploy the API to Railway (alternative)
+
+1. Push the repo to GitHub.
+2. Go to [railway.app](https://railway.app) → **New Project** → Deploy from GitHub.
+3. Railway will auto-detect the `Procfile`.
+4. Add environment variable: `ALLOWED_ORIGINS` = your Vercel frontend URL.
+5. Deploy. Copy the Railway URL.
+
+### Deploy the frontend to Vercel
+
+1. Go to [vercel.com](https://vercel.com) → **New Project**.
+2. Import your GitHub repository.
+3. Set **Root Directory** to `frontend`.
+4. Set **Framework Preset** to `Other`.
+5. Leave the build command **empty** (no build step needed).
+6. Set **Output Directory** to `.` (current directory).
+7. Deploy.
+
+### Update the API URL
+
+After deploying the API, update the `API_URL` in [`frontend/script.js`](frontend/script.js):
+
+```javascript
+// Change this line:
+const API_URL = "http://localhost:8000";
+
+// To your deployed API URL:
+const API_URL = "https://your-api.onrender.com";
+```
+
+---
+
+## 📊 Model Details
+
+| Item | Detail |
+|---|---|
+| **Algorithm** | AdaBoost (best F1 on churn class) |
+| **Dataset** | IBM Telco Customer Churn (7,043 rows) |
+| **Features** | 22 (after encoding) |
+| **Target** | Churn (binary) |
+| **Class balancing** | SMOTE on training set |
+| **Tuning** | RandomizedSearchCV (F1, 3-fold CV) |
+| **Test F1 (Churn)** | ~0.61 |
+| **Test ROC-AUC** | ~0.83 |
+
+### Input Features
+
+| Feature | Type | Values |
+|---|---|---|
+| SeniorCitizen | int | 0 or 1 |
+| Partner | str | Yes, No |
+| Dependents | str | Yes, No |
+| tenure | int | 0–72 |
+| MultipleLines | str | Yes, No, No phone service |
+| InternetService | str | DSL, Fiber optic, No |
+| OnlineSecurity | str | Yes, No, No internet service |
+| OnlineBackup | str | Yes, No, No internet service |
+| DeviceProtection | str | Yes, No, No internet service |
+| TechSupport | str | Yes, No, No internet service |
+| StreamingTV | str | Yes, No, No internet service |
+| StreamingMovies | str | Yes, No, No internet service |
+| Contract | str | Month-to-month, One year, Two year |
+| PaperlessBilling | str | Yes, No |
+| PaymentMethod | str | Electronic check, Mailed check, Bank transfer (automatic), Credit card (automatic) |
+| MonthlyCharges | float | e.g. 29.85 |
+| TotalCharges | float | e.g. 29.85 |
 
 ---
 
 ## 🛠️ Tech Stack
 
-`Python` · `pandas` · `NumPy` · `scikit-learn` · `imbalanced-learn` (SMOTE) · `matplotlib` · `seaborn` · `Jupyter`
+`Python` · `pandas` · `NumPy` · `scikit-learn` · `imbalanced-learn` · `FastAPI` · `Uvicorn` · `HTML/CSS/JS`
 
 ---
 
 ## 📁 Dataset
 
-[IBM Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) — 7,043 rows × 21 columns, covering customer demographics, account tenure/contract/billing details, and subscribed services (phone, internet, streaming, security add-ons).
+[IBM Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) — 7,043 rows × 21 columns.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE) — feel free to use, modify, and share.
-
----
-
-## 🙋 Author
-
-Built as a portfolio / educational data science project. Contributions, issues, and suggestions are welcome — feel free to open a pull request or issue.
-
-</div>
+This project is licensed under the [MIT License](LICENSE).
