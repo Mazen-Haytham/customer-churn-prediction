@@ -13,7 +13,6 @@
   "Contract",
   "PaperlessBilling",
   "MonthlyCharges",
-  "TotalCharges",
   "PaymentMethod_Bank transfer (automatic)",
   "PaymentMethod_Credit card (automatic)",
   "PaymentMethod_Electronic check",

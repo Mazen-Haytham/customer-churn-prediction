@@ -78,7 +78,7 @@ class CustomerInput(BaseModel):
         description="Electronic check, Mailed check, Bank transfer (automatic), or Credit card (automatic)",
     )
     MonthlyCharges: float = Field(..., ge=0, description="Monthly charge amount")
-    TotalCharges: float = Field(..., ge=0, description="Total charges to date")
+
 
     model_config = {
         "json_schema_extra": {
@@ -100,7 +100,6 @@ class CustomerInput(BaseModel):
                     "PaperlessBilling": "Yes",
                     "PaymentMethod": "Electronic check",
                     "MonthlyCharges": 29.85,
-                    "TotalCharges": 29.85,
                 }
             ]
         }
@@ -205,7 +204,6 @@ def preprocess(data: CustomerInput) -> pd.DataFrame:
         "Contract": row["Contract"],
         "PaperlessBilling": row["PaperlessBilling"],
         "MonthlyCharges": row["MonthlyCharges"],
-        "TotalCharges": row["TotalCharges"],
     }
 
     # Add one-hot encoded columns

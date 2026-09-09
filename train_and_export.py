@@ -88,7 +88,7 @@ def main():
     # 5. Feature / target split (notebook cell 21)
     # ------------------------------------------------------------------
     y = df["Churn"]
-    X = df.drop(columns=["Churn", "gender", "PhoneService"])
+    X = df.drop(columns=["Churn", "gender", "PhoneService", "TotalCharges"])
     feature_columns = X.columns.tolist()
     print(f"Feature matrix shape: {X.shape}")
     print(f"Features: {feature_columns}")

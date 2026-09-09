@@ -50,7 +50,6 @@ form.addEventListener("submit", async function (e) {
         PaperlessBilling: document.getElementById("PaperlessBilling").value,
         PaymentMethod: document.getElementById("PaymentMethod").value,
         MonthlyCharges: parseFloat(document.getElementById("MonthlyCharges").value),
-        TotalCharges: parseFloat(document.getElementById("TotalCharges").value),
     };
 
     try {
